@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
-const autoIncrement = require('mongoose-sequence')(mongoose);
+const { v4: uuidv4 } = require('uuid'); // Import uuid
 
 // Connect to MongoDB
-mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/Team_Sync    ")
+mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/Team_Sync")
     .then(() => {
         console.log("Successfully connected to the database.");
     })
@@ -13,7 +13,8 @@ mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/Team_Sync
 // User Schema
 const UserSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4, // Generate a UUID by default
         required: true,
         unique: true
     },
@@ -42,7 +43,8 @@ const UserSchema = new mongoose.Schema({
 // Admin Schema
 const AdminSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -69,7 +71,8 @@ const AdminSchema = new mongoose.Schema({
 // Project Schema
 const ProjectSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -104,7 +107,8 @@ const ProjectSchema = new mongoose.Schema({
 // Project Approval Schema
 const ProjectApprovalSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -113,7 +117,7 @@ const ProjectApprovalSchema = new mongoose.Schema({
         ref: 'Project',
         required: true
     },
-    id: {
+    admin_id: { // Fixed duplicate `id` field
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Admin',
         required: true
@@ -131,7 +135,8 @@ const ProjectApprovalSchema = new mongoose.Schema({
 // Project User Schema
 const ProjectUserSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -154,7 +159,8 @@ const ProjectUserSchema = new mongoose.Schema({
 // Task Schema
 const TaskSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -195,7 +201,8 @@ const TaskSchema = new mongoose.Schema({
 // Task History Schema
 const TaskHistorySchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -224,7 +231,8 @@ const TaskHistorySchema = new mongoose.Schema({
 // Comment Schema
 const CommentSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -259,7 +267,8 @@ const CommentSchema = new mongoose.Schema({
 // Project Statistic Schema
 const ProjectStatisticSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -293,7 +302,8 @@ const ProjectStatisticSchema = new mongoose.Schema({
 // Project Tag Schema
 const ProjectTagSchema = new mongoose.Schema({
     id: {
-        type: Number,
+        type: String,
+        default: uuidv4,
         required: true,
         unique: true
     },
@@ -313,18 +323,6 @@ const ProjectTagSchema = new mongoose.Schema({
         default: Date.now
     }
 });
-
-// Adding Auto Increment
-UserSchema.plugin(autoIncrement, { inc_field: 'id' });
-AdminSchema.plugin(autoIncrement, { inc_field: 'id' });
-ProjectSchema.plugin(autoIncrement, { inc_field: 'id' });
-ProjectApprovalSchema.plugin(autoIncrement, { inc_field: 'id' });
-ProjectUserSchema.plugin(autoIncrement, { inc_field: 'id' });
-TaskSchema.plugin(autoIncrement, { inc_field: 'id' });
-TaskHistorySchema.plugin(autoIncrement, { inc_field: 'id' });
-CommentSchema.plugin(autoIncrement, { inc_field: 'id' });
-ProjectStatisticSchema.plugin(autoIncrement, { inc_field: 'id' });
-ProjectTagSchema.plugin(autoIncrement, { inc_field: 'id' });
 
 // Models
 const User = mongoose.model('User', UserSchema);
