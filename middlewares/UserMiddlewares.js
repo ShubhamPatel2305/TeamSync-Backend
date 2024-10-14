@@ -1,12 +1,17 @@
 const { z } = require('zod');
-const {User} = require("../db/index"); // Ensure this points to your Mongoose User model
+const {User} = require("../db/index"); 
+const bcrypt = require("bcrypt");
 
-// Define a Zod schema for user signup validation
 const userSignupSchema = z.object({
     name: z.string().min(1, { message: "Name is required." }),
     email: z.string().email({ message: "Invalid email format." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
-    // Add any additional fields as necessary
+});
+
+//signin schema need only email and password
+const userSigninSchema = z.object({
+    email: z.string().email({ message: "Invalid email format." }),
+    password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
 });
 
 // Middleware function for input validation and email uniqueness check
@@ -38,6 +43,42 @@ const validateUserSignup = async (req, res, next) => {
     }
 };
 
+//user sign in check middleware that validates input then checks if userwith given username and pasword hash matches a user in db if yes then next
+const validateUserSignin = async (req, res, next) => {
+    try {
+        // Validate the incoming request body against the Zod schema
+        const result = userSigninSchema.safeParse(req.body);
+        if (!result.success) {
+            // Throw an error with the specific validation messages
+            throw new Error(result.error.errors.map(err => err.message).join(', '));
+        }
+
+        // Check if a user with the same email and hashed password exists if match then next
+        const { email, password } = req.body;
+        const existingUser = await User.findOne({ email })
+        if (!existingUser) {
+            return res.status(400).json({
+                errors: ["No user with this email exists."],
+            });
+        }
+        const passwordMatch = await bcrypt.compare(password, existingUser.password_hash);
+        if (!passwordMatch) {
+            return res.status(400).json({
+                errors: ["Password does not match."],
+            });
+        }
+
+        // If validation passes and email is unique, call the next middleware
+        next();
+    } catch (error) {
+        // If validation or email check fails, respond with the errors
+        return res.status(400).json({
+            errors: [error.message], // Ensure to return a single error message for clarity
+        });
+    }
+};
+
 module.exports = {
     validateUserSignup,
+    validateUserSignin
 };

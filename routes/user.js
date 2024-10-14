@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const {User} = require("../db/index"); 
-const { validateUserSignup } = require("../middlewares/UserMiddlewares");
-
+const { validateUserSignup, validateUserSignin } = require("../middlewares/UserMiddlewares");
+const jwt = require("jsonwebtoken");
+require('dotenv').config();
 
 router.post("/signup", validateUserSignup, async (req, res) => {
     try {
@@ -39,4 +40,16 @@ router.post("/signup", validateUserSignup, async (req, res) => {
     }
 });
 
+
+router.post("/signin", validateUserSignin,(req,res)=>{
+    // all checks done create a jwt token using user's email and send it in response 
+    const { email, password } = req.body;
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, {
+        expiresIn: "12h",
+    });
+    return res.json({
+        message: "User signed in successfully.",
+        token,
+    });
+})
 module.exports = router;
