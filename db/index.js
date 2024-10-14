@@ -16,6 +16,11 @@ mongoose.connect(process.env.DB_CONNECTION_STRING)
     .catch((error) => {
         console.error("Error connecting to the database:", error);
     });
+
+const generateRandomOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit random number
+};
+
 // User Schema
 const UserSchema = new mongoose.Schema({
     id: {
@@ -37,8 +42,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    registration_otp: String,
-    reset_otp: String,
+    registration_otp: {
+        type: String,
+        default: generateRandomOTP // Default to a random 6-digit number
+    },
+    reset_otp: {
+        type: String,
+        default: generateRandomOTP // Default to a random 6-digit number
+    },
     created_at: {
         type: Date,
         default: Date.now
