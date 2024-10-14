@@ -75,6 +75,16 @@ router.put("/edit-user", validateUserUpdate, async (req, res) => {
         updateUser.password_hash = await bcrypt.hash(req.body.password, 10);
         //save updated user
         await updateUser.save();
+        //if user updated the email compare email in jwt and req body, then send new token to user as well
+        if(email!==req.body.email){
+            const token = jwt.sign({ email:req.body.email }, process.env.JWT_SECRET, {
+                expiresIn: "12h",
+            });
+            return res.json({
+                message: "User updated successfully.",
+                token,
+            });
+        }
         //send success response
         return res.status(200).json({
             message: "User updated successfully.",
