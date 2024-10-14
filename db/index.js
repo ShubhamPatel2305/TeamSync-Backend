@@ -1,15 +1,21 @@
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid'); // Import uuid
+require('dotenv').config();
+
 
 // Connect to MongoDB
-mongoose.connect("mongodb+srv://admin:admin@cluster0.6c3q0.mongodb.net/Team_Sync")
+if (!process.env.DB_CONNECTION_STRING) {
+    console.error("DB_CONNECTION_STRING is not defined in .env file");
+    process.exit(1); // Exit the process with failure
+}
+
+mongoose.connect(process.env.DB_CONNECTION_STRING)
     .then(() => {
         console.log("Successfully connected to the database.");
     })
     .catch((error) => {
         console.error("Error connecting to the database:", error);
     });
-
 // User Schema
 const UserSchema = new mongoose.Schema({
     id: {
