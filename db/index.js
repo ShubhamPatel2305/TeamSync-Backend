@@ -150,7 +150,8 @@ const ProjectApprovalSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        required: true
+        enum: ['approved', 'rejected'],
+        required: true,
     }
 });
 
