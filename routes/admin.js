@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const { Admin } = require("../db/index"); // Import the Admin model
 const { validateAdminSignIn } = require("../middlewares/AdminMiddlewares"); // Import the validation middleware
+const { validateProjectApproval, approveProject } = require("../middlewares/AdminMiddlewares");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
@@ -45,6 +46,7 @@ router.post("/signin", validateAdminSignIn, async (req, res) => {
 });
 
 // Additional routes can be defined here
+router.post("/approve-project", validateProjectApproval, approveProject);
 
 module.exports = router;
 
