@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const {User} = require("../db/index"); 
-const { validateUserSignup, validateUserSignin } = require("../middlewares/UserMiddlewares");
+const { validateUserSignup, validateUserSignin, validateUserUpdate } = require("../middlewares/UserMiddlewares");
 const jwt = require("jsonwebtoken");
 require('dotenv').config();
+const bcrypt = require("bcrypt");
 
 router.post("/signup", validateUserSignup, async (req, res) => {
     try {
@@ -52,4 +53,38 @@ router.post("/signin", validateUserSignin,(req,res)=>{
         token,
     });
 })
+
+router.put("/edit-user", validateUserUpdate, async (req, res) => {
+    try {
+        //decode jwt token in header to get original email
+        const token = req.headers.authorization;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const email = decoded.email;
+        //find user with that email in db
+        const updateUser= await User.findOne({ email })
+        //if no user found send error
+        if (!updateUser) {
+            return res.status(400).json({
+                errors: ["No user with this email exists."],
+            });
+        }
+        //update details
+        updateUser.name=req.body.name;
+        updateUser.email=req.body.email;
+        //store hashed password
+        updateUser.password_hash = await bcrypt.hash(req.body.password, 10);
+        //save updated user
+        await updateUser.save();
+        //send success response
+        return res.status(200).json({
+            message: "User updated successfully.",
+        });
+    } catch (error) {
+        console.error("Error updating user:", error);
+        return res.status(500).json({
+            errors: ["Internal server error."],
+        });
+    }
+});
+
 module.exports = router;
