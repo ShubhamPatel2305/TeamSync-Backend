@@ -3,7 +3,7 @@ const { z } = require('zod');
 // Define the Zod schema for admin sign-in
 const AdminSignInSchema = z.object({
     email: z.string().email({ message: 'Invalid email address' }),
-    password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
+    password: z.string().min(2, { message: 'Password must be at least 6 characters long' }),
 });
 
 // Middleware function for validating admin sign-in inputs

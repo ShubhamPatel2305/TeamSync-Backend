@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const { Admin } = require("../db/index"); // Import the Admin model
-const { validateAdminSignIn } = require("../middleware/adminmiddleware"); // Import the validation middleware
+const { validateAdminSignIn } = require("../middlewares/AdminMiddlewares"); // Import the validation middleware
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
