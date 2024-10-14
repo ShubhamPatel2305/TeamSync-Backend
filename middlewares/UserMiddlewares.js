@@ -7,6 +7,7 @@ const userSignupSchema = z.object({
     name: z.string().min(1, { message: "Name is required." }),
     email: z.string().email({ message: "Invalid email format." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
+    registerOtp: z.string().length(6, { message: "Register OTP must be 6-digit ." }),
 });
 
 //signin schema need only email and password

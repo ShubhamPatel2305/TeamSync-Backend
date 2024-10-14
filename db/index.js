@@ -50,6 +50,11 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: generateRandomOTP // Default to a random 6-digit number
     },
+    state: {
+        type: String,
+        enum: ['pending', 'verified', 'blocked'], // Enum for state
+        default: 'pending' // Default state is pending
+    },
     created_at: {
         type: Date,
         default: Date.now
