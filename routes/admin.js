@@ -2,8 +2,8 @@
 const express = require("express");
 const router = express.Router();
 const { Admin } = require("../db/index"); // Import the Admin model
-const { validateAdminSignIn } = require("../middlewares/AdminMiddlewares"); // Import the validation middleware
-const { validateProjectApproval, approveProject } = require("../middlewares/AdminMiddlewares");
+const { validateAdminSignIn, tokenValidationAdmin } = require("../middlewares/AdminMiddlewares"); // Import the validation middleware
+const { validateProjectApproval, approveProject, getAllProjects, getAllUsers } = require("../middlewares/AdminMiddlewares");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
@@ -49,10 +49,10 @@ router.post("/signin", validateAdminSignIn, async (req, res) => {
 router.post("/approve-project", validateProjectApproval, approveProject);
 
 // Route to get all users (excluding passwords) and their projects
-router.get("/all_users", getAllUsers);
+router.get("/all_users",tokenValidationAdmin, getAllUsers);
 
 // Route to get all projects and their details
-router.get("/all_projects", getAllProjects);
+router.get("/all_projects",tokenValidationAdmin, getAllProjects);
 
 
 module.exports = router;

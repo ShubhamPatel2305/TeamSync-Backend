@@ -1,5 +1,6 @@
 const { z } = require('zod');
-const { Project, ProjectApproval, User, ProjectUser } = require('../db/index'); // Import necessary models
+const { Project, ProjectApproval, User, ProjectUser, Admin } = require('../db/index'); // Import necessary models
+const jwt = require('jsonwebtoken');
 
 // Define the Zod schema for admin sign-in
 const AdminSignInSchema = z.object({
@@ -71,9 +72,28 @@ const approveProject = async (req, res) => {
     }
 };
 
+const tokenValidationAdmin=async(req,res, next)=>{
+    try {
+        const token = req.header('authorization');
+        if (!token) {
+            return res.status(401).json({ message: 'Token not found' });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const admin = await Admin.findOne({ email: decoded.email });
+        if (!admin) {
+            return res.status(401).json({ message: 'Admin not found' });
+        }
+        req.user = { adminId: admin._id }; // Set the authenticated user in the request object
+        next();
+    } catch (error) {
+        console.error('Error validating token:', error);
+        return res.status(401).json({ message: 'Invalid token' });
+    }
+}
+
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}, '-password_hash') // Fetch all users excluding the password field
+        const users = await User.find({}, '-password_hash -registration_otp -reset_otp') // Fetch all users excluding the password field
             .lean(); // Use `lean()` to get plain JavaScript objects instead of Mongoose documents
         
         // Get all projects users are part of
@@ -104,11 +124,9 @@ const getAllUsers = async (req, res) => {
 
 // Middleware function to get all projects with their details
 const getAllProjects = async (req, res) => {
+    //extract all projects and all their details and send it in reponse 
     try {
-        const projects = await Project.find()
-            .populate('creator_id', 'name email') // Populate creator details (name and email)
-            .lean(); // Use `lean()` for plain JavaScript objects
-
+        const projects = await Project.find({}).lean();
         return res.status(200).json({
             message: 'All projects fetched successfully',
             projects,
@@ -127,4 +145,5 @@ module.exports = {
     approveProject,
     getAllUsers,
     getAllProjects,
+    tokenValidationAdmin
 };

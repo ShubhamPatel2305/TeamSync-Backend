@@ -355,6 +355,20 @@ const Comment = mongoose.model('Comment', CommentSchema);
 const ProjectStatistic = mongoose.model('ProjectStatistic', ProjectStatisticSchema);
 const ProjectTag = mongoose.model('ProjectTag', ProjectTagSchema);
 
+// const bcrypt = require("bcrypt");
+// async function test(){
+//     //generate a new admin
+//     const password_hash = await bcrypt.hash("admin2@1234", 10);
+//     const admin=new Admin({
+//         name:"admin2",
+//         email:"admin2@mail.com",
+//         password_hash
+//     });
+//     await admin.save();
+// }
+
+// test();
+
 
 // Export models
 module.exports = {
