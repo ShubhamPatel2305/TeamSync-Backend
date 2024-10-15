@@ -196,10 +196,48 @@ async function validateUserVerify(req,res,next){
     }
 }
 
+async function tokenValidation(req,res,next){
+    //get user token from headers authorization and extract email then use req body having resetOtp match it with reset otp of given user in db if match then generate a new random 6 digit otp of numbers convert to string andstore it in db then make updated
+    //user object and call next
+    try {
+        
+        const token = req.headers.authorization;
+        if(!token){
+            return res.status(400).json({
+                errors: ["token missing"],
+            });
+        }
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const email = decoded.email;
+        //verify if user with that email exists in db if yes extract his reset_otp and save it 
+        const existingUser = await User.findOne({email});
+        if(!existingUser){
+            return res.status(400).json({
+                errors: ["Enter a valid token"],
+            });
+        }
+
+        //get user id from req params id and check if user with that id exists
+        const id=req.params.id;
+        const check= await User.findOne({id})
+        if(!check){
+            return res.status(400).json({
+                errors: ["Enter a valid user id"],
+            });
+        }
+        next();
+    } catch (error) {
+        return res.status(400).json({
+            errors: [error.message],
+        });
+    }
+}
+
 module.exports = {
     validateUserSignup,
     validateUserSignin,
     validateUserUpdate,
     userUpdateSchema,
-    validateUserVerify
+    validateUserVerify,
+    tokenValidation
 };

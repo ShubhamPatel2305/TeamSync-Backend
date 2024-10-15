@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {User} = require("../db/index"); 
-const { validateUserSignup, validateUserSignin, validateUserUpdate, validateUserVerify } = require("../middlewares/UserMiddlewares");
+const { validateUserSignup, validateUserSignin, validateUserUpdate, validateUserVerify, tokenValidation } = require("../middlewares/UserMiddlewares");
 const jwt = require("jsonwebtoken");
 const {sendOtpEmail} = require("../mailer/OtpMailer")
 require('dotenv').config();
@@ -168,6 +168,32 @@ router.put("/verify",validateUserVerify, async (req,res)=>{
             message: "User verified successfully.",
         });
     }
+})
+
+router.get("/profile/:id", tokenValidation, async (req,res)=>{
+    try {
+        const id=req.params.id;
+        const RequestedUser=await User.findOne({id})
+        if(!RequestedUser){
+            return res.status(400).json({
+                errors: ["No user with this id exists."],
+            });
+        }
+        return res.status(200).json({
+            id:RequestedUser.id,
+            name:RequestedUser.name,
+            email:RequestedUser.email,
+            state:RequestedUser.state,
+            created_at:RequestedUser.created_at,
+            last_login:RequestedUser.last_login
+        });   
+    } catch (error) {
+        console.error("Error getting user:", error);
+        return res.status(500).json({
+            errors: ["Internal server error."],
+        });
+    }
+
 })
 
 module.exports = router;
