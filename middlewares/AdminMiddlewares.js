@@ -124,9 +124,31 @@ const getAllUsers = async (req, res) => {
 
 // Middleware function to get all projects with their details
 const getAllProjects = async (req, res) => {
-    //extract all projects and all their details and send it in reponse 
     try {
-        const projects = await Project.find({}).lean();
+        const projects = await Project.aggregate([
+            {
+                $lookup: {
+                    from: 'projecttags', // Name of the tags collection
+                    localField: 'id', // Project ID
+                    foreignField: 'project_id', // Matching project_id in tags
+                    as: 'tags' // The name of the field where the tags will be stored
+                }
+            },
+            {
+                $project: {
+                    id: 1,
+                    name: 1,
+                    description: 1,
+                    created_at: 1,
+                    updated_at: 1,
+                    deadline: 1,
+                    creator_id: 1,
+                    is_approved: 1,
+                    tags: '$tags.tag_name' // Only return the tag names
+                }
+            }
+        ]);
+
         return res.status(200).json({
             message: 'All projects fetched successfully',
             projects,
@@ -138,6 +160,7 @@ const getAllProjects = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     validateAdminSignIn,
