@@ -7,13 +7,14 @@ const userSignupSchema = z.object({
     name: z.string().min(1, { message: "Name is required." }),
     email: z.string().email({ message: "Invalid email format." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
-    registerOtp: z.string().length(6, { message: "Register OTP must be 6-digit ." }),
+    
 });
 
 //signin schema need only email and password
 const userSigninSchema = z.object({
     email: z.string().email({ message: "Invalid email format." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
+    registerOtp: z.string().length(6, { message: "Register OTP must be 6-digit ." }),
 });
 
 const userUpdateSchema=z.object({
@@ -62,14 +63,24 @@ const validateUserSignin = async (req, res, next) => {
             throw new Error(result.error.errors.map(err => err.message).join(', '));
         }
 
-        // Check if a user with the same email and hashed password exists if match then next
-        const { email, password } = req.body;
-        const existingUser = await User.findOne({ email })
+        const { email, password, registerOtp } = req.body;
+
+        // Check if a user with the same email exists
+        const existingUser = await User.findOne({ email });
         if (!existingUser) {
             return res.status(400).json({
                 errors: ["No user with this email exists."],
             });
         }
+
+        // Check if the user is blocked
+        if (existingUser.state === 'blocked') {
+            return res.status(403).json({
+                errors: ["This account has been blocked. Please contact support."],
+            });
+        }
+
+        // Verify password
         const passwordMatch = await bcrypt.compare(password, existingUser.password_hash);
         if (!passwordMatch) {
             return res.status(400).json({
@@ -77,15 +88,36 @@ const validateUserSignin = async (req, res, next) => {
             });
         }
 
-        // If validation passes and email is unique, call the next middleware
+        // Verify OTP
+        if (registerOtp !== existingUser.registration_otp) {
+            return res.status(400).json({
+                errors: ["Enter a valid OTP."],
+            });
+        }
+
+        // Generate a new random 6-digit OTP
+        const newOtp = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit OTP as a string
+
+        // Update the OTP in the database
+        existingUser.registration_otp = newOtp;
+
+
+        // If user is still in 'pending' state, mark them as 'verified'
+        if (existingUser.state === 'pending') {
+            existingUser.state = 'verified';
+            await existingUser.save();
+        }
+
+        // Proceed to the next middleware
         next();
     } catch (error) {
-        // If validation or email check fails, respond with the errors
+        // Return error messages if validation or email check fails
         return res.status(400).json({
-            errors: [error.message], // Ensure to return a single error message for clarity
+            errors: [error.message], // Ensures clarity by returning a single error message
         });
     }
 };
+
 
 async function validateUserUpdate(req,res,next){
     //get user token from headers authorization and extract email then use req body having resetOtp match it with reset otp of given user in db if match then generate a new random 6 digit otp of numbers convert to string andstore it in db then make updated
