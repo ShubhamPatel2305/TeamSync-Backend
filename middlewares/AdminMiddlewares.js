@@ -44,15 +44,14 @@ const approveProject = async (req, res) => {
         const { project_id, status } = req.body;
         const { adminId } = req.user; // Extract admin ID from the authenticated user
 
-        // Find the project by ID and update its approval status
-        const project = await Project.findById(project_id);
+        const project = await Project.findOne({id:project_id});
         if (!project) {
             return res.status(404).json({ message: 'Project not found' });
         }
 
         // Create a new project approval record
         const newApproval = new ProjectApproval({
-            project_id: project._id,
+            project_id,
             admin_id: adminId,
             status,
         });
@@ -83,7 +82,7 @@ const tokenValidationAdmin=async(req,res, next)=>{
         if (!admin) {
             return res.status(401).json({ message: 'Admin not found' });
         }
-        req.user = { adminId: admin._id }; // Set the authenticated user in the request object
+        req.user = { adminId: admin.id }; // Set the authenticated user in the request object
         next();
     } catch (error) {
         console.error('Error validating token:', error);
