@@ -13,8 +13,7 @@ const userSignupSchema = z.object({
 //signin schema need only email and password
 const userSigninSchema = z.object({
     email: z.string().email({ message: "Invalid email format." }),
-    password: z.string().min(8, { message: "Password must be at least 8 characters long." }),
-    registerOtp: z.string().length(6, { message: "Register OTP must be 6-digit ." }),
+    password: z.string().min(8, { message: "Password must be at least 8 characters long." })
 });
 
 const userUpdateSchema=z.object({
@@ -22,6 +21,11 @@ const userUpdateSchema=z.object({
     resetOtp: z.string().length(6, { message: "Reset OTP must be 6-digit ." }),
     password: z.string().min(8, { message: "Password must be at least 8 characters long." }).optional(),
     name: z.string().min(1, { message: "Name is required." }).optional()
+})
+
+const userVerifySchema=z.object({
+    email: z.string().email({ message: "Invalid email format." }),
+    registerOtp: z.string().length(6, { message: "Register OTP must be 6-digit ." }),
 })
 
 // Middleware function for input validation and email uniqueness check
@@ -63,10 +67,10 @@ const validateUserSignin = async (req, res, next) => {
             throw new Error(result.error.errors.map(err => err.message).join(', '));
         }
 
-        const { email, password, registerOtp } = req.body;
+        const { email, password } = req.body;
 
         // Check if a user with the same email exists
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email:email.trim() });
         if (!existingUser) {
             return res.status(400).json({
                 errors: ["No user with this email exists."],
@@ -79,6 +83,12 @@ const validateUserSignin = async (req, res, next) => {
                 errors: ["This account has been blocked. Please contact support."],
             });
         }
+        //if pending
+        if (existingUser.state === 'pending') {
+            return res.status(403).json({
+                errors: ["This account has not been verified. Please verify your account."],
+            });
+        }
 
         // Verify password
         const passwordMatch = await bcrypt.compare(password, existingUser.password_hash);
@@ -88,25 +98,25 @@ const validateUserSignin = async (req, res, next) => {
             });
         }
 
-        // Verify OTP
-        if (registerOtp !== existingUser.registration_otp) {
-            return res.status(400).json({
-                errors: ["Enter a valid OTP."],
-            });
-        }
+        // // Verify OTP
+        // if (registerOtp !== existingUser.registration_otp) {
+        //     return res.status(400).json({
+        //         errors: ["Enter a valid OTP."],
+        //     });
+        // }
 
         // Generate a new random 6-digit OTP
-        const newOtp = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit OTP as a string
+        // const newOtp = Math.floor(100000 + Math.random() * 900000).toString(); // Generates a 6-digit OTP as a string
 
         // Update the OTP in the database
-        existingUser.registration_otp = newOtp;
+        // existingUser.registration_otp = newOtp;
 
 
         // If user is still in 'pending' state, mark them as 'verified'
-        if (existingUser.state === 'pending') {
-            existingUser.state = 'verified';
-            await existingUser.save();
-        }
+        // if (existingUser.state === 'pending') {
+        //     existingUser.state = 'verified';
+        //     await existingUser.save();
+        // }
 
         // Proceed to the next middleware
         next();
@@ -168,9 +178,28 @@ async function validateUserUpdate(req,res,next){
     }
 }
 
+async function validateUserVerify(req,res,next){
+    //check schema of request
+    //extract email and otp from req body and check with schema of zod, dont do anything else
+    try {
+        const result = userVerifySchema.safeParse(req.body);
+        if (!result.success) {
+            // Throw an error with the specific validation messages
+            throw new Error(result.error.errors.map(err => err.message).join(', '));
+        }
+        next();
+    } catch (error) {
+        // If validation or email check fails, respond with the errors
+        return res.status(400).json({
+            errors: [error.message], // Ensure to return a single error message for clarity
+        });
+    }
+}
+
 module.exports = {
     validateUserSignup,
     validateUserSignin,
     validateUserUpdate,
-    userUpdateSchema
+    userUpdateSchema,
+    validateUserVerify
 };
