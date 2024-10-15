@@ -1,4 +1,5 @@
 const { z } = require('zod');
+const { Project, ProjectApproval, User, ProjectUser } = require('../db/index'); // Import necessary models
 
 // Define the Zod schema for admin sign-in
 const AdminSignInSchema = z.object({
@@ -70,8 +71,60 @@ const approveProject = async (req, res) => {
     }
 };
 
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}, '-password_hash') // Fetch all users excluding the password field
+            .lean(); // Use `lean()` to get plain JavaScript objects instead of Mongoose documents
+        
+        // Get all projects users are part of
+        const projectUsers = await ProjectUser.find().populate('project_id').populate('user_id');
+
+        // Map users with their respective projects
+        const userDetails = users.map(user => {
+            const projects = projectUsers
+                .filter(pu => pu.user_id.toString() === user._id.toString())
+                .map(pu => pu.project_id);
+            return {
+                ...user,
+                projects: projects, // Include the user's projects
+            };
+        });
+
+        return res.status(200).json({
+            message: 'All users fetched successfully',
+            users: userDetails,
+        });
+    } catch (error) {
+        console.error('Error fetching all users:', error);
+        return res.status(500).json({
+            message: 'Internal server error',
+        });
+    }
+};
+
+// Middleware function to get all projects with their details
+const getAllProjects = async (req, res) => {
+    try {
+        const projects = await Project.find()
+            .populate('creator_id', 'name email') // Populate creator details (name and email)
+            .lean(); // Use `lean()` for plain JavaScript objects
+
+        return res.status(200).json({
+            message: 'All projects fetched successfully',
+            projects,
+        });
+    } catch (error) {
+        console.error('Error fetching all projects:', error);
+        return res.status(500).json({
+            message: 'Internal server error',
+        });
+    }
+};
+
 module.exports = {
     validateAdminSignIn,
     validateProjectApproval,
     approveProject,
+    getAllUsers,
+    getAllProjects,
 };

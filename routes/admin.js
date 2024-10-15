@@ -48,5 +48,12 @@ router.post("/signin", validateAdminSignIn, async (req, res) => {
 // Additional routes can be defined here
 router.post("/approve-project", validateProjectApproval, approveProject);
 
+// Route to get all users (excluding passwords) and their projects
+router.get("/all_users", getAllUsers);
+
+// Route to get all projects and their details
+router.get("/all_projects", getAllProjects);
+
+
 module.exports = router;
 
