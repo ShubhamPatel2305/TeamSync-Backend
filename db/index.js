@@ -100,7 +100,8 @@ const ProjectSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     description: {
         type: String,
@@ -116,7 +117,7 @@ const ProjectSchema = new mongoose.Schema({
     },
     deadline: Date,
     creator_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
@@ -135,12 +136,12 @@ const ProjectApprovalSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
     admin_id: { // Fixed duplicate `id` field
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Admin',
         required: true
     },
@@ -164,12 +165,12 @@ const ProjectUserSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
     user_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
@@ -188,7 +189,7 @@ const TaskSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
@@ -203,12 +204,12 @@ const TaskSchema = new mongoose.Schema({
         required: true
     },
     creator_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
     assignee_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User'
     },
     created_at: {
@@ -230,12 +231,12 @@ const TaskHistorySchema = new mongoose.Schema({
         unique: true
     },
     task_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Task',
         required: true
     },
     user_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
@@ -260,12 +261,12 @@ const CommentSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
     creator_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'User',
         required: true
     },
@@ -296,7 +297,7 @@ const ProjectStatisticSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
@@ -331,16 +332,11 @@ const ProjectTagSchema = new mongoose.Schema({
         unique: true
     },
     project_id: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: String,
         ref: 'Project',
         required: true
     },
-    tag_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-    },
     tag_name: String,
-    tag_description: String,
     tagged_at: {
         type: Date,
         default: Date.now
