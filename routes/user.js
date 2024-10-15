@@ -7,6 +7,13 @@ const {sendOtpEmail} = require("../mailer/OtpMailer")
 require('dotenv').config();
 const bcrypt = require("bcrypt");
 
+router.get("/my-projects",(req,res)=>{
+
+})
+
+router.get("/my-tasks",(req,res)=>{
+})
+
 router.post("/signup", validateUserSignup, async (req, res) => {
     try {
         // Destructure the validated data from the request body
@@ -195,5 +202,7 @@ router.get("/profile/:id", tokenValidation, async (req,res)=>{
     }
 
 })
+
+
 
 module.exports = router;
