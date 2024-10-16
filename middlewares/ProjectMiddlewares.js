@@ -175,6 +175,24 @@ async function validateTokenProjectOwner(req,res,next){
     }
 }
 
+async function checkUserEmailExists(req,res,next){
+    //extract email from jwt token
+    const token=req.header("authorization");
+    if(!token){
+        return res.status(401).json({message:"Please enter a token"});
+    }
+    //verify token than extract email from token and verify if it exists in User
+    try {
+        const decoded=jwt.verify(token,process.env.JWT_SECRET);
+        const user=await User.findOne({email:decoded.email});
+        if(!user){
+            return res.status(401).json({message:"User not found"});
+        }
+        next();
+    } catch (error) {
+        return res.status(401).json({message:"Invalid token"});
+    }
+}
 
 module.exports = {
     validateCreateProject,
@@ -182,6 +200,7 @@ module.exports = {
     checkUserExists,
     checkIfCreator,
     userAlreadyAdded,
-    validateTokenProjectOwner
+    validateTokenProjectOwner,
+    checkUserEmailExists
     
 };

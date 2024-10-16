@@ -1,6 +1,6 @@
 const express = require("express");
 const { Project, ProjectTag } = require("../db");
-const { validateCreateProject, checkUserExists, adminValidate } = require("../middlewares/ProjectMiddlewares");
+const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists } = require("../middlewares/ProjectMiddlewares");
 const router = express.Router();
 const jwt=require("jsonwebtoken");
 //require dotenv
@@ -47,6 +47,14 @@ router.post("/create" ,validateCreateProject, async (req,res)=>{
     }
 })
 
-router.post("/adduser", (req,res)=>{
+//get my created projects
+router.get("/my-created-projects",checkUserEmailExists,async (req,res)=>{
+    //get the token from headers and decode it to get the email id
+    const token=req.header("authorization");
+    const decoded=jwt.verify(token,process.env.JWT_SECRET);
+    const email=decoded.email;
+    //get all the projects created by the user
+    const projects=await Project.find({creator_id:email});
+    return res.status(200).json({projects});
 })
 module.exports = router;
