@@ -53,8 +53,35 @@ router.get("/my-created-projects",checkUserEmailExists,async (req,res)=>{
     const token=req.header("authorization");
     const decoded=jwt.verify(token,process.env.JWT_SECRET);
     const email=decoded.email;
-    //get all the projects created by the user
-    const projects=await Project.find({creator_id:email});
+    //get all the projects created by the user and also get tags of them
+    const projects = await Project.aggregate([
+        {
+            $lookup: {
+                from: 'projecttags', // Name of the tags collection
+                localField: 'id', // Project ID
+                foreignField: 'project_id', // Matching project_id in tags
+                as: 'tags' // The name of the field where the tags will be stored
+            }
+        },
+        {
+            $match: {
+                creator_id: email // Filter projects by creator_id matching the email variable
+            }
+        },
+        {
+            $project: {
+                id: 1,
+                name: 1,
+                description: 1,
+                created_at: 1,
+                updated_at: 1,
+                deadline: 1,
+                creator_id: 1,
+                is_approved: 1,
+                tags: '$tags.tag_name' // Only return the tag names
+            }
+        }
+    ]);
     return res.status(200).json({projects});
 })
 module.exports = router;
