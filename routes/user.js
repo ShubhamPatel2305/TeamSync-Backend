@@ -8,7 +8,6 @@ require('dotenv').config();
 const bcrypt = require("bcrypt");
 
 router.get("/my-projects",(req,res)=>{
-
 })
 
 router.get("/my-tasks",(req,res)=>{

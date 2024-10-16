@@ -49,10 +49,10 @@ router.post("/signin", validateAdminSignIn, async (req, res) => {
 router.post("/approve-project",tokenValidationAdmin, validateProjectApproval, approveProject);
 
 // Route to get all users (excluding passwords) and their projects
-router.get("/all_users",tokenValidationAdmin, getAllUsers);
+router.get("/all-users",tokenValidationAdmin, getAllUsers);
 
 // Route to get all projects and their details
-router.get("/all_projects",tokenValidationAdmin, getAllProjects);
+router.get("/all-projects",tokenValidationAdmin, getAllProjects);
 
 
 module.exports = router;
