@@ -8,20 +8,45 @@ const projectCreateSchema = z.object({
     name: z.string().min(4, { message: "Name is required" }),
     description: z.string().min(4, { message: "Description is required" }),
     tags: z.array(z.string().min(1, { message: "Tagname is required" })).optional(),
-    deadline: z.preprocess(
-      (val) => {
-        if (typeof val === "string") {
-          const [day, month, year] = val.split("/").map(Number);
-          const fullYear = year < 100 ? 2000 + year : year; // Handle two-digit year format
-          const parsedDate = new Date(fullYear, month - 1, day); // Convert to JS Date (month is 0-based)
-          return isNaN(parsedDate.getTime()) ? null : parsedDate;
-        }
-        return null;
-      },
-      z.date().refine((date) => !isNaN(date.getTime()), { message: "Invalid date format, expected dd/mm/yy" })
-    )
+    deadline: z.optional(
+        z.preprocess(
+          (val) => {
+            if (typeof val === "string") {
+              const [day, month, year] = val.split("/").map(Number);
+              const fullYear = year < 100 ? 2000 + year : year; // Handle two-digit year format
+              const parsedDate = new Date(fullYear, month - 1, day); // Convert to JS Date (month is 0-based)
+              return isNaN(parsedDate.getTime()) ? null : parsedDate;
+            }
+            return null;
+          },
+          z.date().refine((date) => !isNaN(date.getTime()), { message: "Invalid date format, expected dd/mm/yy" })
+        )
+      )
+      
   });
-  
+
+  const projectUpdateSchema=z.object({
+    project_id:z.string().length(36),
+    name: z.string().min(4, { message: "Name is required" }).optional(),
+    description: z.string().min(4, { message: "Description is required" }).optional(),
+    tags: z.array(z.string().min(1, { message: "Tagname is required" })).optional(),
+    deadline: z.preprocess(
+        (val) => {
+          if (val === undefined || val === null || val === '') {
+            return undefined; // Allow the field to be truly optional by returning undefined
+          }
+          if (typeof val === "string") {
+            const [day, month, year] = val.split("/").map(Number);
+            const fullYear = year < 100 ? 2000 + year : year; // Handle two-digit year format
+            const parsedDate = new Date(fullYear, month - 1, day); // Convert to JS Date (month is 0-based)
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+          }
+          return null;
+        },
+        z.date().optional().refine((date) => !isNaN(date.getTime()), { message: "Invalid date format, expected dd/mm/yy" })
+      ).optional(), // Mark the deadline field as optional
+
+  })
 
 async function validateCreateProject(req,res,next){
     //extract token from header
@@ -64,6 +89,15 @@ async function validateCreateProject(req,res,next){
         console.log("hahah")
         return res.status(400).json({message:error});
     }
+}
+
+async function validateUpdateProject(req,res,next){
+    //only verify schema 
+    const resp=projectUpdateSchema.safeParse(req.body);
+    if(!resp.success){
+        return res.status(400).json({message:resp.error.errors[0].message});
+    }
+    next();
 }
 
 async function checkProjectExists(req,res,next){
@@ -157,21 +191,32 @@ async function userAlreadyAdded(req,res,next){
 }
 
 async function validateTokenProjectOwner(req,res,next){
-    //extract token from header
-    const token=req.header("authorization");
-    if(!token){
-        return res.status(401).json({message:"Please enter a token"});
-    }
-    //verify token than extract email from token and verify if it exists in User
+    //extract token from header and check if he is the creator of the project_id he is trying to edit 
     try {
+        const token=req.header("authorization");
+        if(!token){
+            return res.status(401).json({message:"Please enter a token"});
+        }
         const decoded=jwt.verify(token,process.env.JWT_SECRET);
-        const user=await User.findOne({email:decoded.email});
-        if(!user){
-            return res.status(401).json({message:"User not found"});
+        const schema=z.object({
+            project_id:z.string().length(36)
+        });
+        const resp=schema.safeParse(req.body); 
+        if(!resp.success){
+            return res.status(400).json({message:resp.error.errors[0].message});
+        }
+        //check if project exists
+        const projectGet=await Project.findOne({id:req.body.project_id});
+        if(!projectGet){
+            return res.status(400).json({message:"Project not found"});
+        }
+        
+        if(projectGet.creator_id!=decoded.email){
+            return res.status(401).json({message:"You are not the owner of this project"});
         }
         next();
     } catch (error) {
-        return res.status(401).json({message:"Invalid token"});
+        
     }
 }
 
@@ -201,6 +246,7 @@ module.exports = {
     checkIfCreator,
     userAlreadyAdded,
     validateTokenProjectOwner,
-    checkUserEmailExists
+    checkUserEmailExists,
+    validateUpdateProject
     
 };

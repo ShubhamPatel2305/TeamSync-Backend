@@ -1,6 +1,6 @@
 const express = require("express");
 const { Project, ProjectTag } = require("../db");
-const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists } = require("../middlewares/ProjectMiddlewares");
+const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists, validateTokenProjectOwner, validateUpdateProject } = require("../middlewares/ProjectMiddlewares");
 const router = express.Router();
 const jwt=require("jsonwebtoken");
 //require dotenv
@@ -83,5 +83,72 @@ router.get("/my-created-projects",checkUserEmailExists,async (req,res)=>{
         }
     ]);
     return res.status(200).json({projects});
+})
+
+//update a project 
+router.put("/update",validateTokenProjectOwner, validateUpdateProject, async (req,res)=>{
+    //update the details if sent in request 
+    
+    //get the project id from req body and get the project from database
+    const project_id=req.body.project_id;
+    const project=await Project.findOne({id:project_id});
+    //update the project details if sent in request
+    const {name,description,tags,deadline}=req.body;
+    if(name){
+        project.name=name;
+    }
+    if(description){
+        project.description=description;
+    }
+    if(deadline){
+        const [day, month, year] = deadline.split("/").map(Number);
+        const fullYear = year < 100 ? 2000 + year : year; // Handle two-digit year format
+        const parsedDate = new Date(fullYear, month - 1, day); // Convert to JS Date (month is 0-based)
+        project.deadline=parsedDate;
+    }
+    //append tags 
+    if(tags && tags.length>0){
+        tags.forEach(async (tag)=>{
+            //if such tag already exists for that project id then send error
+            const tagExists=await ProjectTag.findOne({
+                project_id:project_id,
+                tag_name:tag
+            })
+            if(tagExists){
+                return res.status(400).json({message:`Tag ${tag} already exists for this project`});
+            }
+            await ProjectTag.create({project_id:project_id,tag_name:tag});
+        });
+    }
+
+    //make updated_at as date now
+    project.updated_at=Date.now();
+    //save the project
+    try {
+        await project.save();
+        return res.status(200).json({message:"Project updated successfully"});
+    } catch (error) {
+        return res.status(500).json({message:"Internal server error"});
+    }
+})
+
+
+//get projects i am assigned to 
+router.get("/get-my-assigned-projects",checkUserEmailExists,(req,res)=>{
+    //extract email of user from header
+    try {
+        const token=req.header("authorization");
+        const decoded=jwt.verify(token,process.env.JWT_SECRET);
+        const email=decoded.email;
+    } catch (error) {
+        return res.status(401).json({message:"Invalid token"});
+    }
+
+    //get all the projects assigned to the user
+    /*
+    get all project id from here to given user id ie.e mail and extract details of all those projects with their tags and send 
+    */
+    //get all the projects assigned to the user and also get tags of them
+    
 })
 module.exports = router;
