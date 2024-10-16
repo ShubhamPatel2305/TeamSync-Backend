@@ -228,21 +228,47 @@ router.get("/get-all-users/:project_id", checkProjectExists, checkUserAdminExist
 
 
 //get projects i am assigned to 
-router.get("/get-my-assigned-projects",checkUserEmailExists,(req,res)=>{
-    //extract email of user from header
+router.get("/get-my-assigned-projects", checkUserEmailExists, async (req, res) => {
     try {
-        const token=req.header("authorization");
-        const decoded=jwt.verify(token,process.env.JWT_SECRET);
-        const email=decoded.email;
-    } catch (error) {
-        return res.status(401).json({message:"Invalid token"});
-    }
+        // Extract the token from the authorization header
+        const token = req.header("authorization");
+        if (!token) {
+            return res.status(401).json({ message: "Authorization token missing" });
+        }
 
-    //get all the projects assigned to the user
-    /*
-    get all project id from here to given user id ie.e mail and extract details of all those projects with their tags and send 
-    */
-    //get all the projects assigned to the user and also get tags of them
-    
-})
+        // Verify the token and extract the user's email
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const email = decoded.email;
+
+        // Find the user by email (ensure checkUserEmailExists middleware passed)
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const user_id = user.id;
+
+        // Fetch all project IDs where the user is assigned in the ProjectUser table
+        const assignedProjects = await ProjectUser.find({ user_id: user_id });
+
+        if (assignedProjects.length === 0) {
+            return res.status(404).json({ message: "No projects found for this user" });
+        }
+
+        // Extract project IDs
+        const projectIds = assignedProjects.map(proj => proj.project_id);
+
+        // Fetch project details based on project IDs
+        const projects = await Project.find({ id: { $in: projectIds } });
+
+        // Return project details in the response
+        return res.status(200).json(projects);
+    } catch (error) {
+        console.error("Error fetching assigned projects:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+
+
 module.exports = router;
