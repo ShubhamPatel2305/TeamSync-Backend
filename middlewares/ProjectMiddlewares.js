@@ -48,6 +48,11 @@ const projectCreateSchema = z.object({
 
   })
 
+    const addUsersSchema=z.object({
+        project_id:z.string().length(36),
+        user_ids:z.array(z.string().length(36))
+    });
+
 async function validateCreateProject(req,res,next){
     //extract token from header
     const token=req.header("authorization");
@@ -94,6 +99,15 @@ async function validateCreateProject(req,res,next){
 async function validateUpdateProject(req,res,next){
     //only verify schema 
     const resp=projectUpdateSchema.safeParse(req.body);
+    if(!resp.success){
+        return res.status(400).json({message:resp.error.errors[0].message});
+    }
+    next();
+}
+
+async function validateAddUsers(req,res,next){
+    //extract project_id and user_ids from req body and verify schema using zod 
+    const resp=addUsersSchema.safeParse(req.body);
     if(!resp.success){
         return res.status(400).json({message:resp.error.errors[0].message});
     }
@@ -247,6 +261,7 @@ module.exports = {
     userAlreadyAdded,
     validateTokenProjectOwner,
     checkUserEmailExists,
-    validateUpdateProject
+    validateUpdateProject,
+    validateAddUsers
     
 };

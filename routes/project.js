@@ -1,6 +1,6 @@
 const express = require("express");
-const { Project, ProjectTag } = require("../db");
-const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists, validateTokenProjectOwner, validateUpdateProject } = require("../middlewares/ProjectMiddlewares");
+const { Project, ProjectTag, ProjectUser, User } = require("../db");
+const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists, validateTokenProjectOwner, validateUpdateProject, validateAddUsers } = require("../middlewares/ProjectMiddlewares");
 const router = express.Router();
 const jwt=require("jsonwebtoken");
 //require dotenv
@@ -132,6 +132,52 @@ router.put("/update",validateTokenProjectOwner, validateUpdateProject, async (re
     }
 })
 
+//router to add users to a project
+router.post("/addusers", validateTokenProjectOwner, validateAddUsers, async (req, res) => {
+    const project_id = req.body.project_id;
+    const user_ids = req.body.user_ids;
+    
+    const errors = []; // Array to collect errors
+  
+    try {
+      for (const user_id of user_ids) {
+        // Check if the user exists
+        const userExists = await User.findOne({ id: user_id });
+        if (!userExists) {
+          errors.push(`User with id ${user_id} does not exist`);
+          continue; // Skip to the next iteration
+        }
+  
+        // Check if the user is already added to the project
+        const userAlreadyAdded = await ProjectUser.findOne({
+          user_id: user_id,
+          project_id: project_id
+        });
+        if (userAlreadyAdded) {
+          errors.push(`User with id ${user_id} is already added to the project`);
+          continue; // Skip to the next iteration
+        }
+  
+        // Add the user to the project
+        await ProjectUser.create({
+          user_id: user_id,
+          project_id: project_id
+        });
+      }
+  
+      // If there are any errors, return them as a response
+      if (errors.length > 0) {
+        return res.status(400).json({ message: "Some users could not be added", errors });
+      }
+  
+      // If no errors, send success message
+      return res.status(200).json({ message: "Users added successfully" });
+  
+    } catch (error) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+  
 
 //get projects i am assigned to 
 router.get("/get-my-assigned-projects",checkUserEmailExists,(req,res)=>{
