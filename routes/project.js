@@ -1,6 +1,6 @@
 const express = require("express");
 const { Project, ProjectTag, ProjectUser, User } = require("../db");
-const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists, validateTokenProjectOwner, validateUpdateProject, validateAddUsers } = require("../middlewares/ProjectMiddlewares");
+const { validateCreateProject, checkUserExists, adminValidate, checkUserEmailExists, validateTokenProjectOwner, validateUpdateProject, validateAddUsers, checkProjectExists, checkUserAdminExists } = require("../middlewares/ProjectMiddlewares");
 const router = express.Router();
 const jwt=require("jsonwebtoken");
 //require dotenv
@@ -178,6 +178,54 @@ router.post("/addusers", validateTokenProjectOwner, validateAddUsers, async (req
     }
   });
   
+//get all users assigned to a project
+router.get("/get-all-users/:project_id", checkProjectExists, checkUserAdminExists, async (req, res) => {
+    try {
+        // Get project id from the URL params
+        const project_id = req.params.project_id;
+
+        // Get all users assigned to the project
+        const users = await ProjectUser.aggregate([
+            {
+                $match: {
+                    project_id: project_id // Filter users by project_id
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users', // Name of the users collection
+                    localField: 'user_id', // User ID in ProjectUser collection
+                    foreignField: 'id', // Matching field in Users collection
+                    as: 'user' // The field where the user details will be stored
+                }
+            },
+            {
+                $unwind: '$user' // Flatten the array of user details
+            },
+            {
+                $project: {
+                    _id: 0, // Exclude _id from the result
+                    id: '$user.id', // Get user id
+                    name: '$user.name', // Get user name
+                    email: '$user.email', // Get user email
+                    created_at: '$user.created_at', // Get user created_at field
+                    joined_at: '$joined_at' // Get joined_at from ProjectUser
+                }
+            }
+        ]);
+
+        if (users.length === 0) {
+            return res.status(404).json({ message: 'No users found for this project' });
+        }
+
+        // Send the retrieved users as a response
+        return res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
 
 //get projects i am assigned to 
 router.get("/get-my-assigned-projects",checkUserEmailExists,(req,res)=>{

@@ -116,19 +116,38 @@ async function validateAddUsers(req,res,next){
 
 async function checkProjectExists(req,res,next){
     //extract project_id from req body and verify schema using zod 
-    const schema=z.object({
-        project_id:z.string().length(36)
-    });
-    const resp=schema.safeParse(req.body);
-    if(!resp.success){
-        return res.status(400).json({message:resp.error.errors[0].message});
+    
+    //if request is of type get then do this
+    if(req.method=="GET"){
+        console.log("in get")
+        const schema = z.string().length(36, { message: "project_id must be exactly 36 characters long" });
+        const resp=schema.safeParse(req.params.project_id);
+        if(!resp.success){
+            return res.status(400).json({message:resp.error.errors[0].message});
+        }
+        //check if project exists
+        const project=await Project.findOne({id:req.params.project_id});
+        if(!project){
+            return res.status(400).json({message:"Project not found"});
+        }
+        next();
+    }else{
+        const schema=z.object({
+            project_id:z.string().length(36)
+        });
+        console.log("in post")
+        const resp=schema.safeParse(req.body);
+        if(!resp.success){
+            return res.status(400).json({message:resp.error.errors[0].message});
+        }
+        //check if project exists
+        const project=await Project.findOne({id:req.body.project_id});
+        if(!project){
+            return res.status(400).json({message:"Project not found"});
+        }
+        next();
     }
-    //check if project exists
-    const project=await Project.findOne({id:req.body.project_id});
-    if(!project){
-        return res.status(400).json({message:"Project not found"});
-    }
-    next();
+    
 }
 
 async function checkUserExists(req,res,next){
@@ -253,6 +272,26 @@ async function checkUserEmailExists(req,res,next){
     }
 }
 
+async function checkUserAdminExists(req,res,next){
+    //extract email from jwt token
+    const token=req.header("authorization");
+    if(!token){
+        return res.status(401).json({message:"Please enter a token"});
+    }
+    //verify token than extract email from token and verify if it exists in User
+    try {
+        const decoded=jwt.verify(token,process.env.JWT_SECRET);
+        const user=await User.findOne({email:decoded.email});
+        const admin= await Admin.findOne({email:decoded.email});
+        if(!admin && !user){
+            return res.status(401).json({message:"Admin not found"});
+        }
+        next();
+    } catch (error) {
+        return res.status(401).json({message:"Invalid token"});
+    }
+}
+
 module.exports = {
     validateCreateProject,
     checkProjectExists,
@@ -262,6 +301,7 @@ module.exports = {
     validateTokenProjectOwner,
     checkUserEmailExists,
     validateUpdateProject,
-    validateAddUsers
+    validateAddUsers,
+    checkUserAdminExists
     
 };
