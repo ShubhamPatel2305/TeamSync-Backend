@@ -49,6 +49,11 @@ const approveProject = async (req, res) => {
             return res.status(404).json({ message: 'Project not found' });
         }
 
+        //check if project is already approved
+        if(project.is_approved){
+            return res.status(400).json({message:"Project is already approved"});
+        }
+
         // Create a new project approval record
         const newApproval = new ProjectApproval({
             project_id,

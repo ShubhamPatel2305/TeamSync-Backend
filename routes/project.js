@@ -1,13 +1,13 @@
 const express = require("express");
 const { Project, ProjectTag } = require("../db");
-const { validateCreateProject } = require("../middlewares/ProjectMiddlewares");
+const { validateCreateProject, checkUserExists, adminValidate } = require("../middlewares/ProjectMiddlewares");
 const router = express.Router();
 const jwt=require("jsonwebtoken");
 //require dotenv
 require("dotenv").config();
 
 //create a project route
-router.post("/create",validateCreateProject, async (req,res)=>{
+router.post("/create" ,validateCreateProject, async (req,res)=>{
     //get the req body parameters and jwt token in headers decode it get the mail id and use this mail id as creator id to store
     //in the database
 
@@ -45,5 +45,8 @@ router.post("/create",validateCreateProject, async (req,res)=>{
     } catch (error) {
         return res.status(500).json({message:"Internal server error"});
     }
+})
+
+router.post("/adduser", (req,res)=>{
 })
 module.exports = router;
